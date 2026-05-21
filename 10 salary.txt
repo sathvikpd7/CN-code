@@ -1,0 +1,118 @@
+import java.io.IOException;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+
+public class SalaryAverageTotal {
+
+    // MAPPER 
+    public static class MyMapper
+            extends Mapper<Object, Text,
+            Text, FloatWritable> {
+
+        public void map(Object key,
+                        Text value,
+                        Context context)
+                throws IOException, InterruptedException {
+
+            String line = value.toString();
+
+            String[] data = line.split("\\t");
+
+
+            String gender = data[3];
+
+
+            float salary =
+                    Float.parseFloat(data[8]);
+
+            context.write(
+                    new Text(gender),
+                    new FloatWritable(salary)
+            );
+        }
+    }
+
+    // REDUCER 
+    public static class MyReducer
+            extends Reducer<Text, FloatWritable,
+            Text, Text> {
+
+        public void reduce(Text key,
+                           Iterable<FloatWritable> values,
+                           Context context)
+                throws IOException, InterruptedException {
+
+            float total = 0;
+
+            int count = 0;
+
+            for (FloatWritable val : values) {
+
+                total += val.get();
+
+                count++;
+            }
+
+            float average = total / count;
+
+            String result =
+                    "Total = " + total +
+                    " Average = " + average;
+
+            context.write(
+                    key,
+                    new Text(result)
+            );
+        }
+    }
+
+    // DRIVER 
+    public static void main(String[] args)
+            throws Exception {
+
+        Configuration conf = new Configuration();
+
+        Job job = Job.getInstance(
+                conf,
+                "salary average total"
+        );
+
+        job.setJarByClass(
+                SalaryAverageTotal.class
+        );
+
+        job.setMapperClass(MyMapper.class);
+
+        job.setReducerClass(MyReducer.class);
+
+        job.setMapOutputKeyClass(Text.class);
+
+        job.setMapOutputValueClass(FloatWritable.class);
+
+        job.setOutputKeyClass(Text.class);
+
+        job.setOutputValueClass(Text.class);
+
+        FileInputFormat.addInputPath(
+                job,
+                new Path(args[0])
+        );
+
+        FileOutputFormat.setOutputPath(
+                job,
+                new Path(args[1])
+        );
+
+        System.exit(
+                job.waitForCompletion(true)
+                        ? 0 : 1
+        );
+    }
+}
