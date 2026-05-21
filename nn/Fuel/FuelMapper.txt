@@ -1,0 +1,38 @@
+FuelMapper.java
+
+import java.io.IOException;
+import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Mapper;
+
+public class FuelMapper extends Mapper<LongWritable, Text, Text, FloatWritable> {
+
+    private Text resultKey = new Text();
+    private FloatWritable resultValue = new FloatWritable();
+
+    public void map(LongWritable key, Text value, Context context)
+            throws IOException, InterruptedException {
+
+        String line = value.toString();
+        String[] values = line.split(",");
+
+        if(values.length > 49){
+
+            String phevBlended = values[49];
+            String barrels08 = values[0];
+
+            if (!phevBlended.matches("-?\\d+(\\.\\d+)?") &&
+                barrels08.matches("-?\\d+(\\.\\d+)?")) {
+
+                if (!phevBlended.isEmpty() && !barrels08.isEmpty()) {
+
+                    resultKey.set(phevBlended);
+                    resultValue.set(Float.parseFloat(barrels08));
+
+                    context.write(resultKey, resultValue);
+                }
+            }
+        }
+    }
+}

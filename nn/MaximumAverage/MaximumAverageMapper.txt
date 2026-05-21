@@ -1,0 +1,27 @@
+MaximumAverageMapper.java
+
+import java.io.IOException;
+import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Mapper;
+
+public class MaximumAverageMapper extends Mapper<LongWritable, Text, Text, FloatWritable> {
+
+    public void map(LongWritable key, Text value, Context context)
+            throws IOException, InterruptedException {
+
+        String line = value.toString();
+        String[] marks = line.split(" ");
+
+        int sum = 0;
+
+        for (String m : marks) {
+            sum += Integer.parseInt(m);
+        }
+
+        float avg = (float) sum / marks.length;
+
+        context.write(new Text("maxavg"), new FloatWritable(avg));
+    }
+}

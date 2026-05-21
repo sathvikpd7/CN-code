@@ -1,0 +1,36 @@
+EvenOddMapper.java
+
+import java.io.IOException;
+import java.util.StringTokenizer;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+
+public class EvenOddMapper extends org.apache.hadoop.mapreduce.Mapper<Object, Text, Text, IntWritable> {
+
+    private final static IntWritable one = new IntWritable(1);
+    private Text resultKey = new Text();
+
+    @Override
+    protected void map(Object key, Text value, Context context)
+            throws IOException, InterruptedException {
+
+        StringTokenizer itr = new StringTokenizer(value.toString());
+
+        while (itr.hasMoreTokens()) {
+            try {
+                int number = Integer.parseInt(itr.nextToken());
+
+                if (number % 2 == 0) {
+                    resultKey.set("Even");
+                } else {
+                    resultKey.set("Odd");
+                }
+
+                context.write(resultKey, one);
+
+            } catch (NumberFormatException e) {
+                // Ignore invalid input
+            }
+        }
+    }
+}

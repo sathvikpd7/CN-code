@@ -1,0 +1,14 @@
+hdfs namenode -format
+
+start-all.sh
+
+jps
+
+
+hdfs dfs -mkdir /input
+
+hdfs dfs -put dataset_name.txt  /input
+
+hadoop jar jar_file_name.jar DriverClassName  /input /output
+
+hdfs dfs -cat /output/part-r-00000

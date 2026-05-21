@@ -1,0 +1,40 @@
+MPGMapper.java
+
+import java.io.IOException;
+import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+
+public class MPGMapper extends org.apache.hadoop.mapreduce.Mapper<LongWritable, Text, Text, FloatWritable> {
+
+    private Text outputKey = new Text("ElectricCars");
+    private FloatWritable outputValue = new FloatWritable();
+
+    @Override
+    public void map(LongWritable key, Text value, Context context)
+            throws IOException, InterruptedException {
+
+        String line = value.toString();
+
+        // Skip header row
+        if (line.contains("city08")) return;
+
+        String[] fields = line.split(",");
+
+        if (fields.length > 49) {
+            String phevBlended = fields[49];
+            String cityMPG = fields[4];
+
+            // Filter only electric cars
+            if (phevBlended.equalsIgnoreCase("true") && !cityMPG.isEmpty()) {
+                try {
+                    float mpg = Float.parseFloat(cityMPG);
+                    outputValue.set(mpg);
+                    context.write(outputKey, outputValue);
+                } catch (NumberFormatException e) {
+                    // Ignore invalid data
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,94 @@
+Average Salary
+
+import java.io.IOException;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+
+public class AverageAndTotalSalaryCompute {
+
+    /* ===================== MAPPER ===================== */
+    public static class MapperClass
+            extends Mapper<LongWritable, Text, Text, FloatWritable> {
+
+        @Override
+        public void map(LongWritable key, Text value, Context context)
+                throws IOException, InterruptedException {
+
+            String[] fields = value.toString().split("\\t");
+
+            // Ensure correct number of columns
+            if (fields.length > 8) {
+                String category = fields[3]; // e.g., gender/department
+                String salaryStr = fields[8];
+
+                try {
+                    float salary = Float.parseFloat(salaryStr);
+                    context.write(new Text(category), new FloatWritable(salary));
+                } catch (NumberFormatException e) {
+                    // Ignore invalid salary values
+                }
+            }
+        }
+    }
+
+    /* ===================== REDUCER ===================== */
+    public static class ReducerClass
+            extends Reducer<Text, FloatWritable, Text, Text> {
+
+        @Override
+        public void reduce(Text key, Iterable<FloatWritable> values, Context context)
+                throws IOException, InterruptedException {
+
+            float total = 0;
+            int count = 0;
+
+            for (FloatWritable val : values) {
+                total += val.get();
+                count++;
+            }
+
+            if (count > 0) {
+                float average = total / count;
+                String result = "Total: " + total + " | Average: " + average;
+                context.write(key, new Text(result));
+            }
+        }
+    }
+
+    /* ===================== DRIVER ===================== */
+    public static void main(String[] args) throws Exception {
+
+        if (args.length != 2) {
+            System.err.println("Usage: AverageAndTotalSalaryCompute <input> <output>");
+            System.exit(-1);
+        }
+
+        Configuration conf = new Configuration();
+        Job job = Job.getInstance(conf, "Total and Average Salary");
+
+        job.setJarByClass(AverageAndTotalSalaryCompute.class);
+        job.setMapperClass(MapperClass.class);
+        job.setReducerClass(ReducerClass.class);
+
+        job.setMapOutputKeyClass(Text.class);
+        job.setMapOutputValueClass(FloatWritable.class);
+
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(Text.class);
+
+        FileInputFormat.addInputPath(job, new Path(args[0]));
+        FileOutputFormat.setOutputPath(job, new Path(args[1]));
+
+        System.exit(job.waitForCompletion(true) ? 0 : 1);
+    }
+}

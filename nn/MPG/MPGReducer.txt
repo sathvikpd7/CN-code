@@ -1,0 +1,27 @@
+MPGReducer.java 
+
+import java.io.IOException;
+import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.io.Text;
+
+public class MPGReducer extends org.apache.hadoop.mapreduce.Reducer<Text, FloatWritable, Text, FloatWritable> {
+
+    @Override
+    public void reduce(Text key, Iterable<FloatWritable> values, Context context)
+            throws IOException, InterruptedException {
+
+        float sum = 0;
+        int count = 0;
+
+        for (FloatWritable val : values) {
+            sum += val.get();
+            count++;
+        }
+
+        if (count > 0) {
+            float average = sum / count;
+            context.write(new Text("Average City MPG for Electric Cars"),
+                          new FloatWritable(average));
+        }
+    }
+}
